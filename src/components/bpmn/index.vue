@@ -1,9 +1,8 @@
 <template>
   <div class="container">
     <div class="bpmn-viewer">
-      <viewer-header class="bpmn-viewer-header" :processData="initData" @handleExportXmlAction="handleExportXmlAction"
-                     @handleExportBpmnAction="handleExportBpmnAction"
-                     @handleExportSvgAction="handleExportSvgAction"></viewer-header>
+      <viewer-header class="bpmn-viewer-header" :processData="initData" @handleStart="handleStart"
+                     @handleDeploy="handleDeploy"></viewer-header>
       <div class="bpmn-viewer-container">
         <div class="bpmn-viewer-content" ref="bpmnViewer"></div>
       </div>
@@ -19,6 +18,8 @@
   import ViewerHeader from './ViewerHeader'
   import BpmnPanel from "./panel/index";
   import customTranslate from './customTranslate/customTranslate'
+  import activitiModdleDescriptor from './data/activiti.json'
+  import axios from 'axios'
 
   export default {
     name: "index",
@@ -48,7 +49,10 @@
             {
               translate: ['value', customTranslate]
             }
-          ]
+          ],
+          moddleExtensions:{
+            activiti: activitiModdleDescriptor
+          }
         });
 
         // 初始化建模器内容
@@ -64,85 +68,34 @@
       updateXml(xml) {
         this.initData.xml = xml;
       },
-      handleExportXmlAction() {
+      handleDeploy() {
         const _this = this;
-        this.bpmnModeler.saveXML(function (err, xml) {
-          if(err){
+        _this.bpmnModeler.saveXML(function (err, xml) {
+          if (err) {
             console.error(err)
           }
-          let {filename, href} = _this.setEncoded('XML', xml);
-          if (href && filename) {
-            let a = document.createElement('a');
-            a.download = filename; //指定下载的文件名
-            a.href = href; //  URL对象
-            a.click(); // 模拟点击
-            URL.revokeObjectURL(a.href); // 释放URL 对象
-          }
+          _this.bpmnModeler.saveSVG(function (err, svg) {
+            if (err) {
+              console.error(err)
+            }
+
+            axios({
+              url: "http://127.0.0.1:8080/process/deploy",
+              method: 'post',
+              data: {processName: "测试流程", resourceName: "test-process", text: xml, key: "test01",svg:svg}
+            }).then(function (response) {
+              console.log(response)
+            }).catch(function (error) {
+              console.log(error);
+            })
+          });
+
         })
       },
-      handleExportBpmnAction() {
-        const _this = this;
-        this.bpmnModeler.saveXML(function (err, xml) {
-          if (err) {
-            console.error(err)
-          }
-          let {filename, href} = _this.setEncoded('BPMN', xml);
-          if (href && filename) {
-            let a = document.createElement('a');
-            a.download = filename; //指定下载的文件名
-            a.href = href; //  URL对象
-            a.click(); // 模拟点击
-            URL.revokeObjectURL(a.href); // 释放URL 对象
-          }
-        });
-      },
-      handleExportSvgAction() {
-        const _this = this;
-        this.bpmnModeler.saveSVG(function (err, svg) {
-          if (err) {
-            console.error(err)
-          }
-          let {filename, href} = _this.setEncoded('SVG', svg);
-          if (href && filename) {
-            let a = document.createElement('a');
-            a.download = filename;
-            a.href = href;
-            a.click();
-            URL.revokeObjectURL(a.href);
-          }
-        });
-      },
-      setEncoded(type, data) {
-        // 把xml转换为URI，下载要用到的
-        const encodedData = encodeURIComponent(data);
-        if (data) {
-          if (type === 'XML') {
-            // 获取到图的xml，保存就是把这个xml提交给后台
-            // this.initData.xml = data;
-            return {
-              filename: this.initData.name + '.xml',
-              href: "data:application/bpmn20-xml;charset=UTF-8," + encodedData,
-              data: data
-            }
-          }
-          if (type === 'BPMN') {
-            // 获取到图的xml，保存就是把这个xml提交给后台
-            // this.initData.xml = data;
-            return {
-              filename: this.initData.name + '.bpmn',
-              href: "data:application/bpmn20-xml;charset=UTF-8," + encodedData,
-              data: data
-            }
-          }
-          if (type === 'SVG') {
-            this.initData.svg = data;
-            return {
-              filename: this.initData.name + '.svg',
-              href: "data:application/text/xml;charset=UTF-8," + encodedData,
-              data: data
-            }
-          }
-        }
+      handleStart() {
+        axios.post("http://127.0.0.1:8080/process/process1595315694693/start", {}).then(function (response) {
+          console.log(response)
+        })
       }
     },
     components: {

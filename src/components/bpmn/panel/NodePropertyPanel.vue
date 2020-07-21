@@ -166,11 +166,14 @@
         this.updateProperties({conditionExpression:newCondition});
       },
       addUser(properties){
+        console.log(properties)
         this.updateProperties(
           Object.assign(properties, {
-            userType: Object.keys(properties)[0]
+            assignee: Object.keys(properties)[0]
+            // exclusive: true
           })
         );
+        // this.updateProperties({exclusive:true});
       }
     }
   }

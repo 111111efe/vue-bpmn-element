@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import App from './App.vue'
+// import qs from 'qs'
 import ElementUI from 'element-ui'
 import 'reset.css/reset.css'
 import 'bpmn-js/dist/assets/diagram-js.css'
